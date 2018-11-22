@@ -14,6 +14,43 @@ EXTENSION_CSV = "csv"
 START_DIR = "./"
 fullpath = os.path.join
 
+
+def get_nv_power_mode():
+    """
+    Jetson TX2 Development Kit new command line interface nvpmodel tool to get
+    the current power modes.
+    """
+    output = subprocess.run("sudo nvpmodel -q", shell=True, stdout=subprocess.PIPE, universal_newlines=True)
+    #print(output.stdout)
+    line = output.stdout.strip().split('\n')
+    print(line)
+    #print(line[-1])
+    mode = "Mode-"+line[-1]
+    #print(mode)
+    return mode
+
+def set_nv_power_mode(mode):
+    """
+    Jetson TX2 Development Kit new command line interface nvpmodel tool to set
+    the new power modes.
+
+    5 different Mode are : from 0 to 4, to set CPU cores used, and the maximum
+    frequency of the CPU and GPU being used.
+
+    Reference:
+    see section "Usage" under table "nvpmodel mode definition"
+    https://www.jetsonhacks.com/2017/03/25/nvpmodel-nvidia-jetson-tx2-development-kit/
+    """
+    mode_value = int(mode)
+    if mode_value < 0 or mode_value > 4:
+       print("Invalid value : ", mode_value , "must be between 0 to 4")
+       return
+    command = "sudo nvpmodel -m " + mode
+    print(command)
+    output = subprocess.run(command, shell=True, stdout=subprocess.PIPE, universal_newlines=True)
+    print(output.stdout)
+
+
 def make_dir(dirName):
     # Create target Directory if don't exist
     if not os.path.exists(dirName):
@@ -22,13 +59,16 @@ def make_dir(dirName):
     else:
        print("Directory " , dirName ,  " already exists")
 
-def move_csvfile_project():
-    make_dir(PROJECT_FOLDER)
+def move_csvfile_project(mode):
+    power_mode = PROJECT_FOLDER+"/"+mode
+    print("NV Power Mode folder : ", power_mode)
+    #make_dir(PROJECT_FOLDER)
+    make_dir(power_mode)
     for dirname, dirnames, filenames in os.walk(START_DIR):
         for filename in filenames:
             source = fullpath(dirname, filename)
             if filename.endswith(EXTENSION_CSV):
-                shutil.move(source, fullpath(PROJECT_FOLDER, filename))
+                shutil.move(source, fullpath(power_mode, filename))
 
 def create_csvOutFileHeader(command, filename, csvFileName):
     """
@@ -55,7 +95,6 @@ def create_csvOutFileHeader(command, filename, csvFileName):
     file = open(filename, 'r')
     
     for line in file:
-       #if (": " in line and "Allocating" not in line):
        if (": " in line and "Allocating" not in line):
           if "IO" in line or \
              "Kernel" in line or \
@@ -66,7 +105,7 @@ def create_csvOutFileHeader(command, filename, csvFileName):
              val = re.sub(r'\s+', '', line).split(':') 
              header.append(val[0])
     print("header = \n", header)
-    print("------------------------------------------------------\n")
+    #print("------------------------------------------------------\n")
 
     time.sleep(2)
     with open(csvFileName, 'w') as csvFile:
@@ -77,14 +116,13 @@ def create_csvOutFileHeader(command, filename, csvFileName):
                 
 
 def run_command(command, filename, csvFileName):
-    #command = "sudo " + cwd + "/parboil run spmv cuda medium" + " > " + "result_one.txt"
+    #command = "sudo " + cwd + "/parboil run spmv cuda medium" + " > " + tmp
     #print(command)
     os.system(command)
     values = [] 
     file = open(filename, 'r')
     
     for line in file:
-       #if (": " in line and "Allocating" not in line):
        if (": " in line and "Allocating" not in line):
           if "IO" in line or \
              "Kernel" in line or \
@@ -127,15 +165,12 @@ def print_usages():
    print("Example :  out_spmv_large.csv ")
    print("where :")
    print("     algorithm = spmv") 
-   print("     dataset = large") 
-   print("\n")
-   print("usage: python exe_parboil.py -a <algorithm> -d <dataset> -n <iteration>")
-   print("Example :  python exe_parboil.py -a spmv -d large -n 30")
-   print("\n")
+   print("     dataset = large\n")
+   print("Usage: python exe_parboil.py -a <algorithm> -d <dataset> -n <iteration>")
+   print("Example :  python exe_parboil.py -a spmv -d large -n 30 \n")
+   print("-----------")
    print("Selections: ")
    print("-----------")
-   #bm_dict = create_benchmark_dictionary("benchmark_commands_1.txt")
-   #filename = "benchmark_commands_1.txt"
    benchmark_dict = {}
    with open(COMMANDS_FILES) as f:
       for line in f:
@@ -188,7 +223,9 @@ def main(argv):
    # clean up parboil folder by moving all csv files to project folder
    print("Moving csv file to project folder. Please check your result there...")
    time.sleep(2) 
-   move_csvfile_project()
+   power_mode = get_nv_power_mode()
+   print("Current Mode is: ", power_mode)
+   move_csvfile_project(power_mode)
 
 
 if __name__ == "__main__":
