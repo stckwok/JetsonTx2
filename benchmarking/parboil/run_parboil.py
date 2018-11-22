@@ -43,12 +43,13 @@ def set_nv_power_mode(mode):
     """
     mode_value = int(mode)
     if mode_value < 0 or mode_value > 4:
-       print("Invalid value : ", mode_value , "must be between 0 to 4")
+       print("Invalid value : ", mode_value , "Valid range is between 0 to 4 - Mode not changed ! ")
        return
     command = "sudo nvpmodel -m " + mode
     print(command)
     output = subprocess.run(command, shell=True, stdout=subprocess.PIPE, universal_newlines=True)
     print(output.stdout)
+    print(" Change Mode Completed !")
 
 
 def make_dir(dirName):
@@ -59,7 +60,19 @@ def make_dir(dirName):
     else:
        print("Directory " , dirName ,  " already exists")
 
-def move_csvfile_project(mode):
+def move_csvfile_to_project(mode):
+    power_mode = PROJECT_FOLDER+"/"+mode
+    print("NV Power Mode folder : ", power_mode)
+    #make_dir(PROJECT_FOLDER)
+    make_dir(power_mode)
+    cwd = os.getcwd()
+
+    source = os.listdir(cwd)
+    for filename in source:
+       if filename.endswith(EXTENSION_CSV):
+          shutil.move(fullpath(cwd, filename), fullpath(power_mode, filename))
+
+def walk_csvfile_project(mode):
     power_mode = PROJECT_FOLDER+"/"+mode
     print("NV Power Mode folder : ", power_mode)
     #make_dir(PROJECT_FOLDER)
@@ -68,6 +81,7 @@ def move_csvfile_project(mode):
         for filename in filenames:
             source = fullpath(dirname, filename)
             if filename.endswith(EXTENSION_CSV):
+                #shutil.move(source, fullpath(PROJECT_FOLDER, filename))
                 shutil.move(source, fullpath(power_mode, filename))
 
 def create_csvOutFileHeader(command, filename, csvFileName):
@@ -116,7 +130,7 @@ def create_csvOutFileHeader(command, filename, csvFileName):
                 
 
 def run_command(command, filename, csvFileName):
-    #command = "sudo " + cwd + "/parboil run spmv cuda medium" + " > " + tmp
+    #command = "sudo " + cwd + "/parboil run spmv cuda medium" + " > " + TEMP_OUTFILE
     #print(command)
     os.system(command)
     values = [] 
@@ -151,12 +165,18 @@ def create_benchmark_dictionary(filename):
            print(key)
     return benchmark_dict
 
-def exe_command(bm_dict, key, iters=3):
+def exe_command(bm_dict, key, iters, powermode=None):
     command = bm_dict[key] + " > " + TEMP_OUTFILE 
     # if os.path.exists(csvFileName): return
     create_csvOutFileHeader(command, TEMP_OUTFILE, key)
     #print(key)
     print(command)
+
+    # set powermode before executing
+    if powermode is not None:
+       set_nv_power_mode(powermode)
+       time.sleep(5)
+
     for i in range(iters):
         run_command(command, TEMP_OUTFILE, key)
 
@@ -191,11 +211,12 @@ def main(argv):
    algorithm = ''
    dataset = ''
    iteration = ''
+   powermode = None
    try:
-      opts, args = getopt.getopt(argv,"ha:d:n:",["ifile=","ofile=","lfile" ])
+      opts, args = getopt.getopt(argv,"ha:d:n:p:",["ifile=","ofile=","lfile","pfile"])
       #opts, args = getopt.getopt(argv,"hi:o:l:",["ifile=","ofile=","lfile" ])
    except getopt.GetoptError:
-      print("test.py -a <algorithm> -d <dataset> -n <iteration>")
+      print("test.py -a <algorithm> -d <dataset> -n <iteration> -p <powermode>")
       sys.exit(2)
    for opt, arg in opts:
       if opt == '-h':
@@ -208,24 +229,26 @@ def main(argv):
          dataset = arg
       elif opt in ("-n", "--lfile"):
          iteration = arg
+      elif opt in ("-p", "--pfile"):
+         powermode = arg
    print("Algorithm = ", algorithm)
    print("Dataset = ", dataset)
    print("Iteration = ", iteration)
-   #create_command_file()
+   print("PowerMode = ", powermode)
 
    csv_outfile = "out_"+algorithm+"_"+dataset+".csv"
    print(csv_outfile) 
    
    bm_dict = create_benchmark_dictionary(COMMANDS_FILES)
    #exe_command(bm_dict, "out_spmv_large.csv", 3)
-   exe_command(bm_dict, csv_outfile, int(iteration))
-   
+   exe_command(bm_dict, csv_outfile, int(iteration), powermode)
+
    # clean up parboil folder by moving all csv files to project folder
    print("Moving csv file to project folder. Please check your result there...")
    time.sleep(2) 
    power_mode = get_nv_power_mode()
    print("Current Mode is: ", power_mode)
-   move_csvfile_project(power_mode)
+   move_csvfile_to_project(power_mode)
 
 
 if __name__ == "__main__":
