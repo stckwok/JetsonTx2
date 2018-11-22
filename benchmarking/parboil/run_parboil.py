@@ -43,8 +43,13 @@ def set_nv_power_mode(mode):
     """
     mode_value = int(mode)
     if mode_value < 0 or mode_value > 4:
-       print("Invalid value : ", mode_value , "Valid range is between 0 to 4 - Mode not changed ! ")
+       print(">>> Invalid value : ", mode_value , "Valid range is between 0 to 4 - Mode not changed ! ")
        return
+    power_mode = get_nv_power_mode()
+    if int(power_mode.split("-")[1]) == mode_value: 
+       print(">>> Current mode is already: ", mode_value , "Mode not changed ! ")
+       return
+
     command = "sudo nvpmodel -m " + mode
     print(command)
     output = subprocess.run(command, shell=True, stdout=subprocess.PIPE, universal_newlines=True)
@@ -186,8 +191,12 @@ def print_usages():
    print("where :")
    print("     algorithm = spmv") 
    print("     dataset = large\n")
-   print("Usage: python exe_parboil.py -a <algorithm> -d <dataset> -n <iteration>")
-   print("Example :  python exe_parboil.py -a spmv -d large -n 30 \n")
+   print("Usage: python exe_parboil.py -a <algorithm> -d <dataset> -n <iteration> -p <powermode>")
+   print("Example 1:  python exe_parboil.py -a spmv -d large -n 30 \n")
+   print("Example 2:  python exe_parboil.py -a spmv -d large -n 50 -p 1")
+   print("where : powermode valid range from 0 to 4")
+   print(" Refer to Usage in table nvpmodel mode definition ")
+   print(" https://www.jetsonhacks.com/2017/03/25/nvpmodel-nvidia-jetson-tx2-development-kit/ \n")
    print("-----------")
    print("Selections: ")
    print("-----------")
