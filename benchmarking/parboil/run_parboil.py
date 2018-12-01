@@ -5,7 +5,8 @@ import csv
 import re
 import sys, getopt
 import shutil
-import setup_parboil as sp 
+import setup_parboil as sp   # create_command_file
+import nvp_freq_scaling as nfs
 
 TEMP_OUTFILE = "temp_result.txt"
 COMMANDS_FILES = "benchmark_commands_files.txt"
@@ -29,7 +30,6 @@ def get_nv_power_mode():
           # sudo echo 345600 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed
     """
     output = os.system("sudo nvpmodel -q > mfile.txt")
-    #mode = "Mode-"+str(output)
     last = "0"
     if not output:
        f = open("mfile.txt", "r")
@@ -48,7 +48,7 @@ def set_nv_power_mode(mode):
        return
     power_mode = get_nv_power_mode()
     if int(power_mode.split("-")[1]) == mode_value:
-       print(">>> Current mode is already: ", mode_value , "Mode not changed ! ")
+       print("> Current mode is already :", mode_value , " Mode not changed ! ")
        return
 
     command = "sudo nvpmodel -m " + mode
@@ -108,7 +108,7 @@ def make_dir(dirName):
     else:
        print("Directory " , dirName ,  " already exists")
 
-def move_csvfile_to_project(mode):
+def move_csvfile_to_project(mode, dev_freq, cpu, cpu_freq):
     power_mode = PROJECT_FOLDER+"/"+mode
     print("NV Power Mode folder : ", power_mode)
     #make_dir(PROJECT_FOLDER)
@@ -118,7 +118,11 @@ def move_csvfile_to_project(mode):
     source = os.listdir(cwd)
     for filename in source:
        if filename.endswith(EXTENSION_CSV):
-          shutil.move(fullpath(cwd, filename), fullpath(power_mode, filename))
+          print("\nfilename = ", filename)
+          f0 = filename.split(".")[0]
+          newfile = '{0}_{1}_{2}{3}{4}'.format(f0,cpu,cpu_freq,".",EXTENSION_CSV)
+          print("newfile = ", newfile)
+          shutil.move(fullpath(cwd, filename), fullpath(power_mode, newfile))
 
 def walk_csvfile_project(mode):
     power_mode = PROJECT_FOLDER+"/"+mode
@@ -153,7 +157,7 @@ def create_csvOutFileHeader(command, filename, csvFileName):
         return
  
     os.system(command)
-    header = [] 
+    header = ["Start"]
     file = open(filename, 'r')
     
     for line in file:
@@ -167,9 +171,8 @@ def create_csvOutFileHeader(command, filename, csvFileName):
              val = re.sub(r'\s+', '', line).split(':') 
              header.append(val[0])
     print("header = \n", header)
-    #print("------------------------------------------------------\n")
 
-    time.sleep(2)
+    #time.sleep(2)
     with open(csvFileName, 'w') as csvFile:
        writer = csv.writer(csvFile)
        if os.path.getsize(csvFileName) == 0:
@@ -177,12 +180,12 @@ def create_csvOutFileHeader(command, filename, csvFileName):
     os.remove(filename)
                 
 
-def run_command(command, filename, csvFileName):
+def run_command(command, csvFileName, start):
     #command = "sudo " + cwd + "/parboil run spmv cuda medium" + " > " + TEMP_OUTFILE
-    #print(command)
     os.system(command)
-    values = [] 
-    file = open(filename, 'r')
+    values = []
+    values.append(start) 
+    file = open(TEMP_OUTFILE, 'r')
     
     for line in file:
        if (": " in line and "Allocating" not in line):
@@ -194,14 +197,13 @@ def run_command(command, filename, csvFileName):
              "Timer Wall Time:" in line:
              val = re.sub(r'\s+', '', line).split(':') 
              values.append(float(val[1]))
-    print("values = ", values)
+    print("values = ", values)  # remove at runtime
 
-    #time.sleep(1)
     with open(csvFileName, 'a') as csvFile:
        writer = csv.writer(csvFile)
        if os.path.getsize(csvFileName) != 0:
           writer.writerow(tuple(values))
-    os.remove(filename)
+    os.remove(TEMP_OUTFILE)
                 
 
 def create_benchmark_dictionary(filename):
@@ -218,15 +220,19 @@ def exe_command(bm_dict, key, iters, powermode=None):
     # if os.path.exists(csvFileName): return
     create_csvOutFileHeader(command, TEMP_OUTFILE, key)
     #print(key)
-    print(command)
+    #print(command)  # clean up console ouput
 
     # set powermode before executing
     if powermode is not None:
        set_nv_power_mode(powermode)
-       time.sleep(5)
+       time.sleep(1)
+
     #print(">>> ",time.strftime("%Y-%m-%d %H:%M:%S"))
     for i in range(iters):
-        run_command(command, TEMP_OUTFILE, key)
+        #run_command(command, TEMP_OUTFILE, key)
+        start = time.strftime("%Y-%m-%d %H:%M:%S")
+        #print("Iteration = {0} at {1} ".format(i, start))
+        run_command(command, key, start)
 
 def print_usages():
    print("CSV ouput file format")
@@ -253,9 +259,9 @@ def print_usages():
 def create_command_file():
    if not os.path.exists(COMMANDS_FILES):
       sp.create_command_file()
-      print("Command File = " , COMMANDS_FILES ,  " Created ")
+      print("Command File = " , COMMANDS_FILES,  " Created ")
    else:
-      print("Command File =  " , COMMANDS_FILES ,  " already exists")
+      print("Command File = " , COMMANDS_FILES,  " already exists")
 
 
 def main(argv):
@@ -292,15 +298,19 @@ def main(argv):
    #print(csv_outfile)
    
    bm_dict = create_benchmark_dictionary(COMMANDS_FILES)
-   #exe_command(bm_dict, "out_spmv_large.csv", 3)
    exe_command(bm_dict, csv_outfile, int(iteration), powermode)
 
+   print("\n> Test stop at {0} ".format(time.strftime("%Y-%m-%d %H:%M:%S")))
    # clean up parboil folder by moving all csv files to project folder
-   print("Moving csv file to project folder. Please check your result there...")
+   print("\nMoving csv file to project folder. Please check your result there...")
    time.sleep(2) 
    power_mode = get_nv_power_mode()
-   print("Current Mode is: ", power_mode)
-   move_csvfile_to_project(power_mode)
+   #print("Current Mode is: ", power_mode)
+   dev_max_freq = nfs.getting_dev_frequency("max_freq")
+   cpu0_freq = nfs.getting_cpu_frequency("cpu0")
+   print("> GPU max feq = ", dev_max_freq)
+   print("> CPU-0 feq = ", cpu0_freq)
+   move_csvfile_to_project(power_mode, dev_max_freq, "cpu0", cpu0_freq)
 
 
 if __name__ == "__main__":

@@ -1,7 +1,5 @@
 import os
 import time
-import run_parboil as rp
-
 
 # CPU and GPU frequency scaling to get power measurements for different workloads
 # https://elinux.org/Jetson/Performance
@@ -43,8 +41,17 @@ def setting_dev_max_frequency(freq):
 
 def getting_dev_frequency(freq_mode):
     command3 = 'cat /sys/devices/17000000.gp10b/devfreq/17000000.gp10b/{0}'.format(freq_mode)
-    os.system(command3)
+    output = os.system(command3 + " > gpu_freq.txt")
     time.sleep(1)
+    last = "0"
+    if not output:
+       f = open("gpu_freq.txt", "r")
+       lines = f.read().splitlines()
+       last = lines[-1]
+       f.close()
+    #print("frequency is : ", last)
+    os.remove("gpu_freq.txt")
+    return last
 
 def set_cpu_frequency_cmd(cpu, freq):
     """
@@ -73,8 +80,20 @@ def setting_cpu_frequency(cpu, freq):
 
 def getting_cpu_frequency(cpu):
     command2 = get_cpu_frequency_cmd(cpu)
-    os.system(command2)
+    #os.system(command2)
+    #time.sleep(1)
+    output = os.system(command2 + " > cpu_freq.txt")
     time.sleep(1)
+    last = "0"
+    if not output:
+       f = open("cpu_freq.txt", "r")
+       lines = f.read().splitlines()
+       last = lines[-1]
+       f.close()
+    #print("frequency is : ", last)
+    os.remove("cpu_freq.txt")
+    return last
+
     
 def turning_cpu_cores_onoff():
     pass
@@ -98,7 +117,6 @@ def test_fix_CPU_var_DEV_freq():
        # Execute workload 
 
 
-#def main(argv):
 def main():
     print("----------------")
     test_fix_DEV_var_CPU_freq()
