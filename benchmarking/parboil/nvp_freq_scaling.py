@@ -27,6 +27,9 @@ DEV_CUR = "cur_freq"
 DEV_MAX = "max_freq"
 DEV_FREQ_MODE = [DEV_MIN, DEV_CUR, DEV_MAX]
 
+def get_list_cpu_freq():
+    print("CPU available freq = ", CPU_FREQ)
+
 def viewing_cpu_status(cpu):
     command = 'cat /sys/devices/system/cpu/online'
     os.system(command)

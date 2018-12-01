@@ -118,7 +118,7 @@ def move_csvfile_to_project(mode, dev_freq, cpu, cpu_freq):
     source = os.listdir(cwd)
     for filename in source:
        if filename.endswith(EXTENSION_CSV):
-          print("\nfilename = ", filename)
+          print("filename = ", filename)
           f0 = filename.split(".")[0]
           newfile = '{0}_{1}_{2}{3}{4}'.format(f0,cpu,cpu_freq,".",EXTENSION_CSV)
           print("newfile = ", newfile)
@@ -269,12 +269,12 @@ def main(argv):
    algorithm = ''
    dataset = ''
    iteration = ''
-   powermode = None
+   powermode = '0'
    try:
       opts, args = getopt.getopt(argv,"ha:d:n:p:",["ifile=","ofile=","lfile","pfile"])
       #opts, args = getopt.getopt(argv,"hi:o:l:",["ifile=","ofile=","lfile" ])
    except getopt.GetoptError:
-      print("test.py -a <algorithm> -d <dataset> -n <iteration> -p <powermode>")
+      print("run_paraboil.py -a <algorithm> -d <dataset> -n <iteration> -p <powermode>")
       sys.exit(2)
    for opt, arg in opts:
       if opt == '-h':
@@ -298,7 +298,12 @@ def main(argv):
    #print(csv_outfile)
    
    bm_dict = create_benchmark_dictionary(COMMANDS_FILES)
-   exe_command(bm_dict, csv_outfile, int(iteration), powermode)
+   #exe_command(bm_dict, csv_outfile, int(iteration), powermode)
+   try:
+      exe_command(bm_dict, csv_outfile, int(iteration), powermode)
+   except ValueError:
+      print("\n>>>> Please use command for usages : python run_parboil.py -h \n ")
+      sys.exit(2)
 
    print("\n> Test stop at {0} ".format(time.strftime("%Y-%m-%d %H:%M:%S")))
    # clean up parboil folder by moving all csv files to project folder
@@ -306,11 +311,14 @@ def main(argv):
    time.sleep(2) 
    power_mode = get_nv_power_mode()
    #print("Current Mode is: ", power_mode)
-   dev_max_freq = nfs.getting_dev_frequency("max_freq")
-   cpu0_freq = nfs.getting_cpu_frequency("cpu0")
+   #dev_max_freq = nfs.getting_dev_frequency("max_freq")
+   #cpu0_freq = nfs.getting_cpu_frequency("cpu0")
+   dev_max_freq = nfs.getting_dev_frequency(nfs.DEV_MAX)
+   cpu0_freq = nfs.getting_cpu_frequency(nfs.CPU0)
    print("> GPU max feq = ", dev_max_freq)
    print("> CPU-0 feq = ", cpu0_freq)
-   move_csvfile_to_project(power_mode, dev_max_freq, "cpu0", cpu0_freq)
+   #move_csvfile_to_project(power_mode, dev_max_freq, "cpu0", cpu0_freq)
+   move_csvfile_to_project(power_mode, dev_max_freq, nfs.CPU0, cpu0_freq)
 
 
 if __name__ == "__main__":
