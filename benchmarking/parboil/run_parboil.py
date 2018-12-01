@@ -15,7 +15,50 @@ START_DIR = "./"
 fullpath = os.path.join
 
 
+
+def subprocess_run(cmd):
+    output = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, universal_newlines=True)
+    return output
+
 def get_nv_power_mode():
+    """
+    Need file in order to save the output buffer from os.system("sudo nvpmodel -q")
+
+    Can not run subprocess.run(cmd) in root (sudo su), which is required for changing
+    CPU frequency with command
+          # sudo echo 345600 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed
+    """
+    output = os.system("sudo nvpmodel -q > mfile.txt")
+    #mode = "Mode-"+str(output)
+    last = "0"
+    if not output:
+       f = open("mfile.txt", "r")
+       lines = f.read().splitlines()
+       last = lines[-1]
+       f.close()
+    mode = "Mode-"+last
+    print("mode is : ", mode)
+    os.remove("mfile.txt")
+    return mode
+
+def set_nv_power_mode(mode):
+    mode_value = int(mode)
+    if mode_value < 0 or mode_value > 4:
+       print(">>> Invalid value : ", mode_value , "Valid range is between 0 to 4 - Mode not changed ! ")
+       return
+    power_mode = get_nv_power_mode()
+    if int(power_mode.split("-")[1]) == mode_value:
+       print(">>> Current mode is already: ", mode_value , "Mode not changed ! ")
+       return
+
+    command = "sudo nvpmodel -m " + mode
+    print(command)
+    #output = subprocess.run(command, shell=True, stdout=subprocess.PIPE, universal_newlines=True)
+    output = os.system(command)
+    print(" Change Mode Completed !")
+
+
+def get_nv_power_mode2():
     """
     Jetson TX2 Development Kit new command line interface nvpmodel tool to get
     the current power modes.
@@ -29,7 +72,7 @@ def get_nv_power_mode():
     #print(mode)
     return mode
 
-def set_nv_power_mode(mode):
+def set_nv_power_mode2(mode):
     """
     Jetson TX2 Development Kit new command line interface nvpmodel tool to set
     the new power modes.
@@ -46,7 +89,7 @@ def set_nv_power_mode(mode):
        print(">>> Invalid value : ", mode_value , "Valid range is between 0 to 4 - Mode not changed ! ")
        return
     power_mode = get_nv_power_mode()
-    if int(power_mode.split("-")[1]) == mode_value: 
+    if int(power_mode.split("-")[1]) == mode_value:
        print(">>> Current mode is already: ", mode_value , "Mode not changed ! ")
        return
 
@@ -153,7 +196,7 @@ def run_command(command, filename, csvFileName):
              values.append(float(val[1]))
     print("values = ", values)
 
-    time.sleep(1)
+    #time.sleep(1)
     with open(csvFileName, 'a') as csvFile:
        writer = csv.writer(csvFile)
        if os.path.getsize(csvFileName) != 0:
@@ -167,7 +210,7 @@ def create_benchmark_dictionary(filename):
         for line in f:
            (key, val) = line.split(" : ")
            benchmark_dict[key] = val.splitlines()[0]
-           print(key)
+           #print(key)   ## remove display of list at console
     return benchmark_dict
 
 def exe_command(bm_dict, key, iters, powermode=None):
@@ -181,7 +224,7 @@ def exe_command(bm_dict, key, iters, powermode=None):
     if powermode is not None:
        set_nv_power_mode(powermode)
        time.sleep(5)
-
+    #print(">>> ",time.strftime("%Y-%m-%d %H:%M:%S"))
     for i in range(iters):
         run_command(command, TEMP_OUTFILE, key)
 
@@ -246,7 +289,7 @@ def main(argv):
    print("PowerMode = ", powermode)
 
    csv_outfile = "out_"+algorithm+"_"+dataset+".csv"
-   print(csv_outfile) 
+   #print(csv_outfile)
    
    bm_dict = create_benchmark_dictionary(COMMANDS_FILES)
    #exe_command(bm_dict, "out_spmv_large.csv", 3)
