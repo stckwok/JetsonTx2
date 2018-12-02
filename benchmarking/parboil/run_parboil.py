@@ -109,7 +109,7 @@ def make_dir(dirName):
        print("Directory " , dirName ,  " already exists")
 
 def move_csvfile_to_project(mode, dev_freq, cpu, cpu_freq):
-    power_mode = PROJECT_FOLDER+"/"+mode
+    power_mode = PROJECT_FOLDER+"/Mode-"+mode
     print("NV Power Mode folder : ", power_mode)
     #make_dir(PROJECT_FOLDER)
     make_dir(power_mode)
@@ -120,7 +120,7 @@ def move_csvfile_to_project(mode, dev_freq, cpu, cpu_freq):
        if filename.endswith(EXTENSION_CSV):
           print("filename = ", filename)
           f0 = filename.split(".")[0]
-          newfile = '{0}_{1}_{2}{3}{4}'.format(f0,cpu,cpu_freq,".",EXTENSION_CSV)
+          newfile = '{0}_{1}_{2}_{3}{4}{5}'.format(f0,cpu,cpu_freq,dev_freq,".",EXTENSION_CSV)
           print("newfile = ", newfile)
           shutil.move(fullpath(cwd, filename), fullpath(power_mode, newfile))
 
@@ -170,7 +170,7 @@ def create_csvOutFileHeader(command, filename, csvFileName):
              "Timer Wall Time:" in line:
              val = re.sub(r'\s+', '', line).split(':') 
              header.append(val[0])
-    print("header = \n", header)
+    print("header = ", header)
 
     #time.sleep(2)
     with open(csvFileName, 'w') as csvFile:
@@ -233,6 +233,18 @@ def exe_command(bm_dict, key, iters, powermode=None):
         start = time.strftime("%Y-%m-%d %H:%M:%S")
         #print("Iteration = {0} at {1} ".format(i, start))
         run_command(command, key, start)
+
+    # capture end time to the last line of csv file.
+    endtime = time.strftime("%Y-%m-%d %H:%M:%S")
+    lastrow = []
+    lastrow.append(endtime)
+    for i in range(6):
+       lastrow.append("0")
+
+    with open(key, 'a') as csvFile:
+       writer = csv.writer(csvFile)
+       writer.writerow(lastrow)
+
 
 def print_usages():
    print("CSV ouput file format")
@@ -317,7 +329,6 @@ def main(argv):
    cpu0_freq = nfs.getting_cpu_frequency(nfs.CPU0)
    print("> GPU max feq = ", dev_max_freq)
    print("> CPU-0 feq = ", cpu0_freq)
-   #move_csvfile_to_project(power_mode, dev_max_freq, "cpu0", cpu0_freq)
    move_csvfile_to_project(power_mode, dev_max_freq, nfs.CPU0, cpu0_freq)
 
 
