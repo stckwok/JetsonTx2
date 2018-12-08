@@ -120,9 +120,11 @@ def move_csvfile_to_project(mode, dev_freq, cpu, cpu_freq):
        if filename.endswith(EXTENSION_CSV):
           print("filename = ", filename)
           f0 = filename.split(".")[0]
-          newfile = '{0}_{1}_{2}_{3}{4}{5}'.format(f0,cpu,cpu_freq,dev_freq,".",EXTENSION_CSV)
+          #newfile = '{0}_{1}_{2}_{3}{4}{5}'.format(f0,cpu,cpu_freq,dev_freq,".",EXTENSION_CSV)
+          newfile = '{0}_performance_{1}_{2}.{3}'.format(f0,cpu_freq,dev_freq,EXTENSION_CSV)
           print("newfile = ", newfile)
-          shutil.move(fullpath(cwd, filename), fullpath(power_mode, newfile))
+          if "power" not in newfile:
+             shutil.move(fullpath(cwd, filename), fullpath(power_mode, newfile))
 
 def walk_csvfile_project(mode):
     power_mode = PROJECT_FOLDER+"/"+mode
@@ -230,12 +232,14 @@ def exe_command(bm_dict, key, iters, powermode=None):
     #print(">>> ",time.strftime("%Y-%m-%d %H:%M:%S"))
     for i in range(iters):
         #run_command(command, TEMP_OUTFILE, key)
-        start = time.strftime("%Y-%m-%d %H:%M:%S")
+        #start = time.strftime("%Y-%m-%d %H:%M:%S")
+        start = time.strftime("%H:%M:%S")
         #print("Iteration = {0} at {1} ".format(i, start))
         run_command(command, key, start)
 
     # capture end time to the last line of csv file.
-    endtime = time.strftime("%Y-%m-%d %H:%M:%S")
+    #endtime = time.strftime("%Y-%m-%d %H:%M:%S")
+    endtime = time.strftime("%H:%M:%S")
     lastrow = []
     lastrow.append(endtime)
     for i in range(6):

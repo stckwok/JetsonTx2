@@ -10,7 +10,12 @@ CPU0 = "cpu0"
 CPU1 = "cpu1"
 CPU2 = "cpu2"
 CPU3 = "cpu3"
-CPU_LIST = [CPU0, CPU1, CPU2, CPU3]
+CPU4 = "cpu4"
+CPU5 = "cpu5"
+#CPU_LIST = [CPU0, CPU1, CPU2, CPU3, CPU4, CPU5]
+CPU_LIST = [CPU0]
+CPU_LIST4 = [CPU4]
+CPU_LIST5 = [CPU5]
 
 NV_POWER_MODE = ["0", "1", "2", "3", "4"]
 
@@ -93,13 +98,27 @@ def getting_cpu_frequency(cpu):
        lines = f.read().splitlines()
        last = lines[-1]
        f.close()
-    #print("frequency is : ", last)
+    print("frequency is : ", last)
     os.remove("cpu_freq.txt")
     return last
 
     
 def turning_cpu_cores_onoff():
     pass
+
+def test_fix_DEV_var_CPU5_freq():
+    #for each GPU fixed one frequency:
+    for cpu_num in CPU_LIST5:  # [CPU0, CPU1, CPU2, CPU3]
+       setting_cpu_userspace(cpu_num)
+       for cpu_freq in CPU_FREQ:
+          setting_cpu_frequency(cpu_num, cpu_freq)
+          #getting_cpu_frequency(cpu_num)
+          getting_cpu_frequency("cpu0")
+          getting_cpu_frequency("cpu1")
+          getting_cpu_frequency("cpu2")
+          getting_cpu_frequency("cpu3")
+          getting_cpu_frequency("cpu4")
+          getting_cpu_frequency("cpu5")
 
 def test_fix_DEV_var_CPU_freq():
     #for each GPU fixed one frequency:
@@ -122,8 +141,9 @@ def test_fix_CPU_var_DEV_freq():
 
 def main():
     print("----------------")
-    test_fix_DEV_var_CPU_freq()
-    test_fix_CPU_var_DEV_freq()
+    test_fix_DEV_var_CPU5_freq()
+    #test_fix_DEV_var_CPU_freq()
+    #test_fix_CPU_var_DEV_freq()
 
     print("----------------")
 
