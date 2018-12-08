@@ -1,7 +1,42 @@
+"""
+Module: run_parboil.py
+interfaces to execute parboil benchmark and capture results to csv file for post analysis
+
+    (1) Jetson TX2 Development Kit new command line interface nvpmodel tool to set
+    the new power modes.
+
+    5 different Mode are : from 0 to 4, to set CPU cores used, and the maximum
+    frequency of the CPU and GPU being used.
+
+    Reference:
+    see section "Usage" under table "nvpmodel mode definition"
+    https://www.jetsonhacks.com/2017/03/25/nvpmodel-nvidia-jetson-tx2-development-kit/
+
+    (2) Create csv file with header extracted from executing benchmark commmand
+     #  python measure_power.py -a spmv -d medium -n 1 -p 0 -c 0
+     ('Algorithm = ', 'spmv')
+     ('Dataset = ', 'medium')
+     ('Iteration = ', '1')
+     ('PowerMode = ', '0')
+     ('CPU_Number = ', '0')
+     ('command = ', 'python run_parboil.py -a spmv -d medium -n 1 -p 0 -c 0')
+
+    Input:
+        command - parboil executable with input arguments
+
+    Output:
+        filename - temp file containing the command output as following
+        csvFileName - csv file (.csv) for a particular algorithm and dataset with following header and
+                      the values row for each iteration
+        'header = ', ['Start', 'IO', 'Kernel', 'Copy', 'Driver', 'CPU/KernelOverlap', 'TimerWallTime']
+        'values = ', ['21:54:43', 0.871207, 0.55561, 0.561676, 0.560539, 0.560865, 2.135917])
+"""
+
+
 import subprocess
 import os
 import time
-import csv 
+import csv
 import re
 import sys, getopt
 import shutil
@@ -14,7 +49,6 @@ PROJECT_FOLDER = "project"
 EXTENSION_CSV = "csv"
 START_DIR = "./"
 fullpath = os.path.join
-
 
 
 def subprocess_run(cmd):
@@ -77,12 +111,6 @@ def set_nv_power_mode2(mode):
     Jetson TX2 Development Kit new command line interface nvpmodel tool to set
     the new power modes.
 
-    5 different Mode are : from 0 to 4, to set CPU cores used, and the maximum
-    frequency of the CPU and GPU being used.
-
-    Reference:
-    see section "Usage" under table "nvpmodel mode definition"
-    https://www.jetsonhacks.com/2017/03/25/nvpmodel-nvidia-jetson-tx2-development-kit/
     """
     mode_value = int(mode)
     if mode_value < 0 or mode_value > 4:

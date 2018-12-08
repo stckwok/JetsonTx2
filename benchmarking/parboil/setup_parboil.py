@@ -1,3 +1,14 @@
+"""
+Module: setup_parboil.py
+interfaces to construct dictionary of filename.cvs with benchmmark commands
+This module is called within run_parboil module to create the file "create_command_file"
+benchmark_commands_files.txt
+
+Once this file is created, it will be used to look up the command to be executed from parsing
+the input options from the user. The result will also be saved to the corresponding key value
+which is the cvs file name for the algorithm and dataset used.
+ 
+"""
 import subprocess
 import os
 import csv 

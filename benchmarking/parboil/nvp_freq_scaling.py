@@ -1,3 +1,7 @@
+"""
+Module: nvp_freq_scaling.py
+interfaces to set and get the CPU and GPU frequency
+"""
 import os
 import time
 
@@ -12,9 +16,7 @@ CPU2 = "cpu2"
 CPU3 = "cpu3"
 CPU4 = "cpu4"
 CPU5 = "cpu5"
-#CPU_LIST = [CPU0, CPU1, CPU2, CPU3, CPU4, CPU5]
 CPU_LIST = [CPU0]
-CPU_LIST4 = [CPU4]
 CPU_LIST5 = [CPU5]
 
 NV_POWER_MODE = ["0", "1", "2", "3", "4"]

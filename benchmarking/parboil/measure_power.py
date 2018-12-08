@@ -1,10 +1,6 @@
-import os
-import time
-import sys, getopt
-import shutil
-import run_parboil as rp
-import nvp_freq_scaling as nfs 
-fullpath = os.path.join
+"""
+Module: measure_power.py
+This module perform the actual power measurement for the selected bechmark by user
 
 # external power measurement
 #sudo ./wattsup ttyUSB0 watts volts amps > spmv_large_30_345600_ext.csv
@@ -15,6 +11,26 @@ fullpath = os.path.join
 # option '-f <csv file>' writes a CSV file. If the file already exists the values will be appended at the end.
 # option '-c <number>' loops 'number' times, can be used with -t.
 # option '-t <period>' takes a sample every 'period' miliseconds, can be used with -c.
+
+Usages:
+    Fix GPU frequency and varies CPU freq
+
+    When -c <cpu_number> is used, power measurement is performed to that CPU core over
+    each available GPU freq against all availabe CPU freq.
+
+    This must be executed in root mode because setting frequency on the device is required
+    to be in root mode "sudo su"
+    Example:
+            $ sudo su
+            # python measure_power.py -a spmv -d large -n 1 -p 0 -c 1
+"""
+import os
+import time
+import sys, getopt
+import shutil
+import run_parboil as rp
+import nvp_freq_scaling as nfs
+fullpath = os.path.join
 
 POWER_MEASURE_PERIOD = "100"  # msec
 POWER_FOLDER = "POWER"
@@ -41,11 +57,6 @@ def test_fix_DEV_var_CPU_freq(dev_max_freq, cmd, bm_dict, csv_outfile, iteration
     Fix GPU frequency and varies CPU freq
     When -c <cpu_number> is used, power measurement is performed to that CPU core over
     each available GPU freq against all availabe CPU freq.
-    This must be executed in root mode because setting frequency on the device is required
-    to be in root mode "sudo su"
-    Example:
-            $ sudo su
-            # python measure_power.py -a spmv -d large -n 1 -p 0 -c 1
     """
 
     if "-c " in cmd:
